@@ -1,7 +1,10 @@
-streamlit>=1.25.0
-transformers>=4.33.0
-torch>=2.0.0
+streamlit==1.38.0
+pillow== 10.4.0
+torch==2.4.1
+transformers== 4.45.1
+byaldi==0.1.0
 torchvision
 qwen-vl-utils
 einops
 Pillow
+accelerate>=0.26.0
