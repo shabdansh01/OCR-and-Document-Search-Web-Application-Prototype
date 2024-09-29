@@ -3,9 +3,8 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from PIL import Image
 import torch
 import json
-# from qwen_vl_utils import process_vision_info
 
-# Load the processor and model
+
 @st.cache_resource
 def load_model():
     model_name = "Qwen/Qwen2-VL-2B-Instruct"
@@ -36,15 +35,13 @@ def perform_ocr(image):
         text_prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
         inputs = processor(
             text=[text_prompt],
-            images=[image],  # Pass the image directly here
+            images=[image],
             padding=True,
             return_tensors="pt",
         ).to(model.device)
 
-        # Generate the output
-        output_ids = model.generate(**inputs, max_new_tokens=512)
 
-        # Extract the generated text
+        output_ids = model.generate(**inputs, max_new_tokens=512)
         generated_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs['input_ids'], output_ids)
         ]
@@ -57,7 +54,6 @@ def perform_ocr(image):
         st.error(f"An error occurred during OCR: {e}")
         return ""
 
-
 st.title("Hindi-English OCR Web Application")
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
@@ -68,17 +64,29 @@ if uploaded_file is not None:
     with st.spinner('Performing OCR...'):
         extracted_text = perform_ocr(image)
         st.success('OCR Complete!')
-
-    # Display extracted text
     st.subheader("Extracted Text")
-    st.text_area("Text", extracted_text, height=200)
+    output_format = st.radio("Select output format", ("Plain Text", "JSON"))
 
-    # Save extracted text as JSON
-    extracted_data = {"extracted_text": extracted_text}
-    json_data = json.dumps(extracted_data, ensure_ascii=False)
+    if output_format == "Plain Text":
+        st.text_area("Text", extracted_text, height=200)
+    elif output_format == "JSON":
+        extracted_data = {"extracted_text": extracted_text}
+        json_data = json.dumps(extracted_data, ensure_ascii=False, indent=4)
+        st.text_area("JSON Output", json_data, height=200)
 
-    # Keyword Search
+        # Save extracted text as JSON for download
+        st.download_button(
+            label="Download JSON",
+            data=json_data,
+            file_name="extracted_text.json",
+            mime="application/json"
+        )
+
+
     st.subheader("Keyword Search")
+    example_keywords = ["Hindi", "text", "OCR", "example"]
+    st.write("Example keywords: ", ", ".join(example_keywords))
+
     keyword = st.text_input("Enter keyword to search")
 
     if keyword:
@@ -86,6 +94,6 @@ if uploaded_file is not None:
             st.markdown(f"**Keyword '{keyword}' found in the text.**")
             # Highlight matched sections
             highlighted_text = extracted_text.replace(keyword, f"**{keyword}**")
-            st.markdown(highlighted_text)
+            st.markdown(highlighted_text, unsafe_allow_html=True)
         else:
             st.markdown(f"**Keyword '{keyword}' not found in the text.**")
